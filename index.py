@@ -3,21 +3,23 @@ import json
 import urllib.request
 from http.server import BaseHTTPRequestHandler
 
-
 BOT_TOKEN = os.environ["8837432914:AAEhdjp1qWlRf0eJ79gTbLyDDCTkXWyKohY"]
-FAL_KEY = os.environ["d060dc8b-22ff-45d2-896b-04f890f8f3b3:ca65cadf7738fcd19678087fbbec8500"]
 
+def send_message(chat_id, text):
+    url = f"https://api.telegram.org/bot{8837432914:AAEhdjp1qWlRf0eJ79gTbLyDDCTkXWyKohY}/sendMessage"
 
-def telegram(method, data):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
+    data = json.dumps({
+        "chat_id": chat_id,
+        "text": text
+    }).encode("utf-8")
+
     request = urllib.request.Request(
         url,
-        data=json.dumps(data).encode(),
+        data=data,
         headers={"Content-Type": "application/json"}
     )
-    with urllib.request.urlopen(request) as response:
-        return json.loads(response.read())
 
+    urllib.request.urlopen(request)
 
 class handler(BaseHTTPRequestHandler):
 
@@ -28,32 +30,29 @@ class handler(BaseHTTPRequestHandler):
             update = json.loads(body)
 
             message = update.get("message", {})
-            chat = message.get("chat", {})
-            text = message.get("text", "")
+            chat = message.get("chat")
 
-            if not chat:
-                self.send_response(200)
-                self.end_headers()
-                return
+            if chat:
+                chat_id = chat["id"]
+                text = message.get("text", "")
 
-            chat_id = chat["id"]
-
-            if text == "/start":
-                telegram("sendMessage", {
-                    "chat_id": chat_id,
-                    "text": "🎬 ابعتلي وصف الفيديو اللي عايزه."
-                })
-
-            else:
-                telegram("sendMessage", {
-                    "chat_id": chat_id,
-                    "text": "⏳ وصلت فكرتك، جاري تجهيز الفيديو..."
-                })
+                if text == "/start":
+                    send_message(
+                        chat_id,
+                        "🎬 ابعتلي وصف الفيديو اللي عايزه."
+                    )
+                else:
+                    send_message(
+                        chat_id,
+                        "⏳ وصلت فكرتك، جاري تجهيز الفيديو..."
+                    )
 
             self.send_response(200)
             self.end_headers()
+            self.wfile.write(b"OK")
 
         except Exception as e:
-            print(e)
+            print("ERROR:", e)
             self.send_response(200)
             self.end_headers()
+            self.wfile.write(b"OK")
